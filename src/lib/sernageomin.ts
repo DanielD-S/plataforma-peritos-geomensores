@@ -40,7 +40,13 @@ export function derivar(c: Concesion): Derivados {
   const manifestacion = piValido(c.pi) && c.ladoNS > 0 && c.ladoEO > 0 ? rectanguloDesdePI(c.pi, c.ladoNS, c.ladoEO) : []
   const solicitud = normalizarPerimetro(c.perimetroSolicitud.length >= 3 ? c.perimetroSolicitud : manifestacion)
   const mensura = normalizarPerimetro(c.perimetroMensura.length >= 3 ? c.perimetroMensura : solicitud)
-  const grilla = generarGrilla(mensura, c.pertenenciaEO, c.pertenenciaNS, c.prefijoPertenencias)
+  const grilla = generarGrilla(mensura, c.pertenenciaEO, c.pertenenciaNS, c.prefijoPertenencias, c.prefijoLindero || "L-", c.inicioInteriores)
+  // Alias del perito: los vértices son objetos compartidos entre linderos, interiores y pertenencias,
+  // así que renombrarlos aquí los renombra en todos los cuadros, textos y shapefiles.
+  for (const v of grilla.todos) {
+    const alias = c.aliasVertices?.[v.nombreBase]?.trim()
+    if (alias) v.nombre = alias
+  }
   return {
     manifestacion,
     solicitud,

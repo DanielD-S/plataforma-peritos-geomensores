@@ -6,7 +6,8 @@ import { crsPorEpsg } from "../lib/crs"
 import type { Punto, Vertice } from "../lib/geometria"
 import type { Concesion } from "../lib/modelo"
 import type { Derivados } from "../lib/sernageomin"
-import { CapaCatastro, type EstadoCatastro } from "./CapaCatastro"
+import { BuscadorCatastro } from "./BuscadorCatastro"
+import { CapaCatastro, type DestinoBase, type EstadoCatastro } from "./CapaCatastro"
 import { EditorVertices } from "./EditorVertices"
 
 interface Props {
@@ -16,6 +17,15 @@ interface Props {
   editando: boolean
   paso: number
   onPerimetro: (perimetro: Punto[]) => void
+  /** Usar una concesión del catastro (por OBJECTID) como base. */
+  onUsarCatastro: (objectId: number, destino: DestinoBase) => void
+}
+
+/** Entrega la instancia del mapa al componente padre (los controles viven fuera del MapContainer). */
+function CapturaMapa({ onMapa }: { onMapa: (m: L.Map) => void }) {
+  const map = useMap()
+  useEffect(() => onMapa(map), [map, onMapa])
+  return null
 }
 
 type LatLng = [number, number]
@@ -49,9 +59,11 @@ function mismoAnillo(a: Punto[], b: Punto[]): boolean {
  * Previsualización en Leaflet. La reproyección a WGS84 es solo referencial
  * (parámetros towgs84 genéricos); los archivos se entregan en el datum oficial sin transformar.
  */
-export function Mapa({ concesion: c, derivados: d, editando, paso, onPerimetro }: Props) {
+export function Mapa({ concesion: c, derivados: d, editando, paso, onPerimetro, onUsarCatastro }: Props) {
   const [mostrarCatastro, setMostrarCatastro] = useState(true)
   const [estadoCatastro, setEstadoCatastro] = useState<EstadoCatastro>({ cargando: false, cantidad: 0, zoomInsuficiente: false, error: null })
+  const [mapa, setMapa] = useState<L.Map | null>(null)
+  const centrar = (bb: [number, number, number, number]) => mapa?.fitBounds(L.latLngBounds([bb[1], bb[0]], [bb[3], bb[2]]), { padding: [24, 24], maxZoom: 16 })
 
   const { aLatLng, dePunto } = useMemo(() => {
     const crs = crsPorEpsg(c.epsg)
@@ -90,7 +102,8 @@ export function Mapa({ concesion: c, derivados: d, editando, paso, onPerimetro }
           maxNativeZoom={17}
         />
         <Encuadre puntos={encuadre} />
-        <CapaCatastro visible={mostrarCatastro} onEstado={setEstadoCatastro} />
+        <CapturaMapa onMapa={setMapa} />
+        <CapaCatastro visible={mostrarCatastro} onEstado={setEstadoCatastro} onUsar={onUsarCatastro} />
         {manifestacion.length >= 3 && (
           <Polygon positions={manifestacion} pathOptions={{ color: "#b45309", weight: 2, dashArray: "6 4", fillOpacity: 0.05 }}>
             <Tooltip sticky>Manifestación</Tooltip>
@@ -137,7 +150,7 @@ export function Mapa({ concesion: c, derivados: d, editando, paso, onPerimetro }
       </MapContainer>
 
       <div
-        className="absolute right-3 top-3 z-[1000] flex flex-col gap-1 rounded-md border px-3 py-2 text-xs shadow"
+        className="absolute right-3 top-3 z-[1000] flex w-72 flex-col gap-1 rounded-md border px-3 py-2 text-xs shadow"
         style={{ background: "var(--pg-panel)", borderColor: "var(--pg-line)" }}
       >
         <label className="flex cursor-pointer items-center gap-2 font-semibold">
@@ -151,6 +164,7 @@ export function Mapa({ concesion: c, derivados: d, editando, paso, onPerimetro }
             <span><i className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: "#ea580c" }} /> Explotación</span>
           </span>
         )}
+        <BuscadorCatastro onUsar={onUsarCatastro} onCentrar={centrar} />
       </div>
       {editando && (
         <div className="absolute bottom-6 left-1/2 z-[1000] -translate-x-1/2 rounded-md border px-3 py-1.5 text-xs font-semibold shadow" style={{ background: "#fffbeb", borderColor: "#fcd34d", color: "#92400e" }}>

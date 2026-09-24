@@ -76,6 +76,12 @@ export interface Concesion {
   pertenenciaNS: number
   /** Prefijo del nombre de cada pertenencia, p. ej. "ANTAQUENA 1,". */
   prefijoPertenencias: string
+  /** Prefijo de los linderos, p. ej. "L-" → L-1, L-2… */
+  prefijoLindero: string
+  /** Primer número de los vértices interiores; null = cantidad de linderos + 1. */
+  inicioInteriores: number | null
+  /** Nombres personalizados por vértice, indexados por el nombre generado (nombreBase). */
+  aliasVertices: Record<string, string>
   hito: PuntoReferencia | null
   /** Vértice geodésico de amarre (IGM, red Sernageomin o hito autorizado). */
   amarre: PuntoReferencia | null
@@ -156,6 +162,9 @@ export const CONCESION_EJEMPLO: Concesion = {
   pertenenciaEO: 100,
   pertenenciaNS: 100,
   prefijoPertenencias: "ANTAQUENA 1,",
+  prefijoLindero: "L-",
+  inicioInteriores: null,
+  aliasVertices: {},
   hito: { nombre: "HM ANTAQUENA 1 1 AL 22", n: 7_476_968.934, e: 465_054.15, altura: 1698.91 },
   amarre: { nombre: "VERT. SED (SNGM)", n: 7_481_235.843, e: 462_933.594, altura: 1741.65 },
   auxiliares: [],
@@ -214,6 +223,9 @@ export function concesionVacia(): Concesion {
     pertenenciaEO: 100,
     pertenenciaNS: 100,
     prefijoPertenencias: "",
+    prefijoLindero: "L-",
+    inicioInteriores: null,
+    aliasVertices: {},
     hito: null,
     amarre: null,
     auxiliares: [],
@@ -292,6 +304,12 @@ export function normalizarConcesion(raw: unknown): Concesion {
     pertenenciaEO: numero(o.pertenenciaEO, base.pertenenciaEO),
     pertenenciaNS: numero(o.pertenenciaNS, base.pertenenciaNS),
     prefijoPertenencias: texto(o.prefijoPertenencias),
+    prefijoLindero: texto(o.prefijoLindero, "L-"),
+    inicioInteriores: numeroONulo(o.inicioInteriores),
+    aliasVertices:
+      o.aliasVertices && typeof o.aliasVertices === "object"
+        ? Object.fromEntries(Object.entries(o.aliasVertices as Record<string, unknown>).filter(([, v]) => typeof v === "string" && v.trim()) as [string, string][])
+        : {},
     hito: referencia(o.hito),
     amarre: referencia(o.amarre),
     auxiliares: Array.isArray(o.auxiliares) ? o.auxiliares.map(referencia).filter((p): p is PuntoReferencia => p !== null) : [],

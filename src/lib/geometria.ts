@@ -15,6 +15,8 @@ export type TipoVertice = "lindero" | "interior"
 export interface Vertice extends Punto {
   nombre: string
   tipo: TipoVertice
+  /** Nombre generado por la convención, antes de cualquier alias del perito. */
+  nombreBase: string
 }
 
 export interface Pertenencia {
@@ -156,6 +158,8 @@ export function generarGrilla(
   alto: number,
   prefijo: string,
   prefijoLindero = "L-",
+  /** Primer número de los vértices interiores; por defecto, cantidad de linderos + 1. */
+  inicioInteriores: number | null = null,
 ): Grilla {
   const perimetro = normalizarPerimetro(perimetroEntrada)
   if (perimetro.length < 3 || ancho <= 0 || alto <= 0) {
@@ -165,6 +169,7 @@ export function generarGrilla(
   const linderos: Vertice[] = perimetro.map((p, i) => ({
     ...p,
     nombre: `${prefijoLindero}${i + 1}`,
+    nombreBase: `${prefijoLindero}${i + 1}`,
     tipo: "lindero",
   }))
   const nombresLindero = new Map(linderos.map((l) => [clave(l), l]))
@@ -201,9 +206,11 @@ export function generarGrilla(
     }
   }
   const interioresOrdenados = [...nodos.values()].sort((a, b) => b.n - a.n || a.e - b.e)
+  const primero = inicioInteriores != null && inicioInteriores > 0 ? Math.round(inicioInteriores) : linderos.length + 1
   const interiores: Vertice[] = interioresOrdenados.map((p, i) => ({
     ...p,
-    nombre: String(linderos.length + i + 1),
+    nombre: String(primero + i),
+    nombreBase: String(primero + i),
     tipo: "interior",
   }))
   const indice = new Map<string, Vertice>([
@@ -261,6 +268,35 @@ export function descripcionPerimetro(linderos: Vertice[]): RelacionAzimut[] {
     const s = linderos[(i + 1) % linderos.length]
     return { desde: l.nombre, hasta: s.nombre, azimut: azimutCentesimal(l, s), distancia: distancia(l, s) }
   })
+}
+
+/**
+ * Limpia un anillo que viene de una fuente con ruido (catastro reproyectado, KML):
+ * redondea las coordenadas al paso, quita vértices repetidos y vértices colineales.
+ */
+export function simplificarAnillo(anillo: Punto[], paso: number): Punto[] {
+  const r = (v: number) => (paso > 0 ? Math.round(v / paso) * paso : redondear(v, 3))
+  let p = normalizarPerimetro(anillo).map((v) => ({ n: r(v.n), e: r(v.e) }))
+  // Repetidos consecutivos
+  p = p.filter((v, i) => i === 0 || Math.abs(v.n - p[i - 1].n) > TOL || Math.abs(v.e - p[i - 1].e) > TOL)
+  if (p.length > 1 && Math.abs(p[0].n - p[p.length - 1].n) < TOL && Math.abs(p[0].e - p[p.length - 1].e) < TOL) p.pop()
+  // Colineales (incluye giros de 180°)
+  let cambio = true
+  while (cambio && p.length > 3) {
+    cambio = false
+    for (let i = 0; i < p.length; i++) {
+      const a = p[(i - 1 + p.length) % p.length]
+      const b = p[i]
+      const c = p[(i + 1) % p.length]
+      const cruz = (b.e - a.e) * (c.n - b.n) - (b.n - a.n) * (c.e - b.e)
+      if (Math.abs(cruz) < TOL) {
+        p.splice(i, 1)
+        cambio = true
+        break
+      }
+    }
+  }
+  return normalizarPerimetro(p)
 }
 
 /** Bounding box del conjunto de puntos. */

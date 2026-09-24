@@ -10,9 +10,13 @@ export interface EstadoCatastro {
   error: string | null
 }
 
+export type DestinoBase = "manifestacion" | "solicitud" | "mensura"
+
 interface Props {
   visible: boolean
   onEstado?: (e: EstadoCatastro) => void
+  /** Usar la geometría de una concesión del catastro como base de la concesión en edición. */
+  onUsar?: (objectId: number, destino: DestinoBase) => void
 }
 
 interface FeatureLike {
@@ -32,13 +36,16 @@ function estilo(f?: FeatureLike): PathOptions {
   }
 }
 
-function escapar(s: string): string {
-  return s.replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch] ?? ch)
-}
-
-/** Ficha de la concesión, solo al hacer clic sobre el polígono. */
-function alCrear(f: FeatureLike, capa: Layer) {
+/** Ficha de la concesión (solo al hacer clic), con botones para usarla como base. */
+function fichaPopup(f: FeatureLike, onUsar?: (objectId: number, destino: DestinoBase) => void): HTMLElement {
   const c = desdeAtributos(f.properties ?? {})
+  const raiz = document.createElement("div")
+  raiz.style.fontSize = "12px"
+  const titulo = document.createElement("b")
+  titulo.textContent = c.nombre
+  raiz.appendChild(titulo)
+  const tabla = document.createElement("table")
+  tabla.style.marginTop = "4px"
   const filas: [string, string][] = [
     ["Rol", c.rol],
     ["Tipo", ETIQUETA_TIPO[c.tipo]],
@@ -48,26 +55,57 @@ function alCrear(f: FeatureLike, capa: Layer) {
     ["Comuna", c.comuna],
     ["Datum", `${c.datum} huso ${c.huso}`],
   ]
-  const cuerpo = filas
-    .filter(([, v]) => v)
-    .map(([k, v]) => `<tr><td style="color:#6b7280;padding-right:8px">${k}</td><td>${escapar(v)}</td></tr>`)
-    .join("")
-  capa.bindPopup(`<div style="font-size:12px"><b>${escapar(c.nombre)}</b><table style="margin-top:4px">${cuerpo}</table></div>`, {
-    maxWidth: 320,
-  })
+  for (const [k, v] of filas) {
+    if (!v) continue
+    const tr = document.createElement("tr")
+    const td1 = document.createElement("td")
+    td1.style.color = "#6b7280"
+    td1.style.paddingRight = "8px"
+    td1.textContent = k
+    const td2 = document.createElement("td")
+    td2.textContent = v
+    tr.append(td1, td2)
+    tabla.appendChild(tr)
+  }
+  raiz.appendChild(tabla)
+  if (onUsar && c.id) {
+    const etiqueta = document.createElement("div")
+    etiqueta.textContent = "Usar su geometría como:"
+    etiqueta.style.cssText = "margin-top:8px;color:#6b7280;font-size:11px"
+    raiz.appendChild(etiqueta)
+    const botones = document.createElement("div")
+    botones.style.cssText = "display:flex;gap:4px;margin-top:4px"
+    const opciones: [DestinoBase, string][] = [
+      ["manifestacion", "Manifestación"],
+      ["solicitud", "Solicitud"],
+      ["mensura", "Mensura"],
+    ]
+    for (const [destino, texto] of opciones) {
+      const b = document.createElement("button")
+      b.type = "button"
+      b.textContent = texto
+      b.style.cssText = "font-size:11px;padding:2px 6px;border:1px solid #cbd5e1;border-radius:4px;background:#fff;cursor:pointer"
+      b.addEventListener("click", () => onUsar(c.id, destino))
+      botones.appendChild(b)
+    }
+    raiz.appendChild(botones)
+  }
+  return raiz
 }
 
 /**
  * Catastro Sernageomin en la vista actual, consultado al mover el mapa (zoom ≥ 12).
  * Exploración en azul, explotación en naranja, en trámite punteado.
  */
-export function CapaCatastro({ visible, onEstado }: Props) {
+export function CapaCatastro({ visible, onEstado, onUsar }: Props) {
   const map = useMap()
   const [datos, setDatos] = useState<GeoJSON.FeatureCollection | null>(null)
   const [version, setVersion] = useState(0)
   const abortRef = useRef<AbortController | null>(null)
   const onEstadoRef = useRef(onEstado)
   onEstadoRef.current = onEstado
+  const onUsarRef = useRef(onUsar)
+  onUsarRef.current = onUsar
 
   async function cargar() {
     if (!visible) return
@@ -107,5 +145,13 @@ export function CapaCatastro({ visible, onEstado }: Props) {
   }, [visible])
 
   if (!visible || !datos) return null
-  return <GeoJSON key={version} data={datos} style={estilo} onEachFeature={alCrear} interactive />
+  return (
+    <GeoJSON
+      key={version}
+      data={datos}
+      style={estilo}
+      onEachFeature={(f: FeatureLike, capa: Layer) => capa.bindPopup(() => fichaPopup(f, onUsarRef.current), { maxWidth: 320 })}
+      interactive
+    />
+  )
 }

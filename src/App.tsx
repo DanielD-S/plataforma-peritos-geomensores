@@ -10,9 +10,10 @@ import { SeparadorHorizontal } from "./components/Separador"
 import { Tablas } from "./components/Tablas"
 import { useCartera } from "./hooks/useCartera"
 import { useSuperposiciones } from "./hooks/useSuperposiciones"
+import { obtenerAnillo } from "./lib/catastro"
 import { crsPorEpsg } from "./lib/crs"
 import { numeroCl } from "./lib/formato"
-import { bbox, type Punto } from "./lib/geometria"
+import { bbox, simplificarAnillo, type Punto } from "./lib/geometria"
 import { derivar } from "./lib/sernageomin"
 import { validarConcesion } from "./lib/validar"
 
@@ -67,6 +68,25 @@ export default function App() {
       })
     } else if (destino === "solicitud") actualizar("perimetroSolicitud", anillo)
     else actualizar("perimetroMensura", anillo)
+  }
+
+  const [avisoCatastro, setAvisoCatastro] = useState<string | null>(null)
+  async function usarCatastro(objectId: number, destino: DestinoPoligono) {
+    try {
+      const anillo = simplificarAnillo(await obtenerAnillo(objectId, concesion.epsg), paso)
+      cargarPoligono(destino, anillo)
+      setAvisoCatastro(`Geometría del catastro cargada como ${destino === "manifestacion" ? "manifestación" : destino === "solicitud" ? "solicitud" : "mensura"}, ajustada a ${paso} m. Es referencial: revisa los vértices.`)
+    } catch (e) {
+      setAvisoCatastro(e instanceof Error ? e.message : "No se pudo cargar la concesión.")
+    }
+    setTimeout(() => setAvisoCatastro(null), 6000)
+  }
+
+  function ponerAlias(nombreBase: string, alias: string) {
+    const nuevo = { ...concesion.aliasVertices }
+    if (alias.trim() && alias.trim() !== nombreBase) nuevo[nombreBase] = alias
+    else delete nuevo[nombreBase]
+    actualizar("aliasVertices", nuevo)
   }
 
   function cargarPunto(destino: DestinoPunto, p: { nombre: string; n: number; e: number }) {
@@ -124,15 +144,20 @@ export default function App() {
 
         <section ref={columna} className="flex min-h-0 flex-col">
           <div className="min-h-0 flex-1 overflow-hidden rounded-lg border" style={{ borderColor: "var(--pg-line)" }}>
-            <Mapa concesion={concesion} derivados={derivados} editando={editando} paso={paso} onPerimetro={onPerimetro} />
+            <Mapa concesion={concesion} derivados={derivados} editando={editando} paso={paso} onPerimetro={onPerimetro} onUsarCatastro={usarCatastro} />
           </div>
           <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border px-3 py-2" style={{ background: "var(--pg-panel)", borderColor: "var(--pg-line)" }}>
             <Descargas concesion={concesion} perito={perito} derivados={derivados} superposiciones={superposiciones.lista} />
+            {avisoCatastro && (
+              <span className="rounded-md px-2 py-1 text-xs" style={{ background: "#dcfce7", color: "#166534" }}>
+                {avisoCatastro}
+              </span>
+            )}
             <Revision hallazgos={hallazgos} />
           </div>
           <SeparadorHorizontal alto={altoTablas} min={ALTO_MIN} max={altoMax()} onCambio={setAltoTablas} />
           <div className="min-h-0 overflow-hidden rounded-lg border" style={{ height: altoTablas, background: "var(--pg-panel)", borderColor: "var(--pg-line)" }}>
-            <Tablas concesion={concesion} derivados={derivados} superposiciones={superposiciones} />
+            <Tablas concesion={concesion} derivados={derivados} superposiciones={superposiciones} onAlias={ponerAlias} onRestablecerNombres={() => actualizar("aliasVertices", {})} />
           </div>
         </section>
       </main>

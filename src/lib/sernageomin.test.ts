@@ -38,6 +38,16 @@ describe("paquete Sernageomin", () => {
     }
   })
 
+  it("los alias del perito llegan a cuadros y shapefiles", async () => {
+    const p = await generarPaquete({ ...CONCESION_EJEMPLO, prefijoLindero: "L", aliasVertices: { L1: "HITO NW", "11": "V-11" } })
+    const { grilla } = p.derivados
+    expect(grilla.linderos[0].nombre).toBe("HITO NW")
+    expect(grilla.linderos[1].nombre).toBe("L2")
+    expect(grilla.pertenencias[0].vertices.map((v) => v.nombre).join("-")).toBe("HITO NW-V-11-20-L10")
+    const dbf = new TextDecoder().decode(p.shapefiles.find((s) => s.base === "vertices_mensura")!.archivos["vertices_mensura.dbf"])
+    expect(dbf).toContain("HITO NW")
+  })
+
   it("sin hito produce un shapefile de hito vacío pero válido", async () => {
     const p = await generarPaquete({ ...CONCESION_EJEMPLO, hito: null })
     const hito = p.shapefiles.find((s) => s.base === "hito_de_mensura")!

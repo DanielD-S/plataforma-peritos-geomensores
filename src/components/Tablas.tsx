@@ -12,6 +12,9 @@ interface Props {
   concesion: Concesion
   derivados: Derivados
   superposiciones: EstadoSuperposiciones
+  /** Renombrar un vértice (alias por nombre generado). Vacío = volver al nombre generado. */
+  onAlias: (nombreBase: string, alias: string) => void
+  onRestablecerNombres: () => void
 }
 
 type Pestana = "vertices" | "pertenencias" | "azimut" | "perimetro" | "geodesia" | "catastro" | "textos"
@@ -79,7 +82,7 @@ function Seccion({ titulo, texto }: { titulo: string; texto: string }) {
 }
 
 /** Cuadros que van en el acta y en el plano, calculados desde la geometría. */
-export function Tablas({ concesion: c, derivados: d, superposiciones: sp }: Props) {
+export function Tablas({ concesion: c, derivados: d, superposiciones: sp, onAlias, onRestablecerNombres }: Props) {
   const [pestana, setPestana] = useState<Pestana>("vertices")
   const { grilla } = d
   const valido = <T extends { n: number; e: number }>(p: T | null): T | null => (p && p.n > 0 && p.e > 0 ? p : null)
@@ -126,26 +129,46 @@ export function Tablas({ concesion: c, derivados: d, superposiciones: sp }: Prop
       </div>
       <div className="min-h-0 flex-1 overflow-auto">
         {pestana === "vertices" && (
-          <table className="tabla">
-            <thead>
-              <tr>
-                <th>Vértice</th>
-                <th>Tipo</th>
-                <th>Norte (m)</th>
-                <th>Este (m)</th>
-              </tr>
-            </thead>
-            <tbody>
-              {grilla.todos.map((v) => (
-                <tr key={v.nombre}>
-                  <td>{v.nombre}</td>
-                  <td>{v.tipo}</td>
-                  <td>{coordenadaCl(v.n)}</td>
-                  <td>{coordenadaCl(v.e)}</td>
+          <div>
+            <div className="flex items-center justify-between px-2 py-1 text-xs" style={{ color: "var(--pg-muted)" }}>
+              <span>El nombre se edita en la tabla y se usa en cuadros, textos, acta y shapefiles.</span>
+              {Object.keys(c.aliasVertices).length > 0 && (
+                <button type="button" className="boton boton-secundario !px-2 !py-0.5 !text-xs" onClick={onRestablecerNombres}>
+                  Restablecer nombres
+                </button>
+              )}
+            </div>
+            <table className="tabla">
+              <thead>
+                <tr>
+                  <th>Vértice</th>
+                  <th>Generado</th>
+                  <th>Tipo</th>
+                  <th>Norte (m)</th>
+                  <th>Este (m)</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {grilla.todos.map((v) => (
+                  <tr key={v.nombreBase}>
+                    <td>
+                      <input
+                        className="w-28 rounded border px-1 py-0.5 font-mono text-xs"
+                        style={{ borderColor: v.nombre !== v.nombreBase ? "var(--pg-primary)" : "var(--pg-line)" }}
+                        value={v.nombre}
+                        onChange={(e) => onAlias(v.nombreBase, e.target.value)}
+                        aria-label={`Nombre del vértice ${v.nombreBase}`}
+                      />
+                    </td>
+                    <td>{v.nombreBase}</td>
+                    <td>{v.tipo}</td>
+                    <td>{coordenadaCl(v.n)}</td>
+                    <td>{coordenadaCl(v.e)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
         {pestana === "pertenencias" && (
           <table className="tabla">
@@ -221,7 +244,7 @@ export function Tablas({ concesion: c, derivados: d, superposiciones: sp }: Prop
                   </p>
                   <TablaRelacion
                     filas={[
-                      ...relacionDesdePunto({ ...hito, nombre: hito.nombre || "H.M." }, [{ ...amarre, nombre: amarre.nombre || "Amarre", tipo: "lindero" }]),
+                      ...relacionDesdePunto({ ...hito, nombre: hito.nombre || "H.M." }, [{ ...amarre, nombre: amarre.nombre || "Amarre", nombreBase: amarre.nombre || "Amarre", tipo: "lindero" }]),
                       ...relacionDesdePunto({ ...amarre, nombre: amarre.nombre || "Amarre" }, grilla.linderos),
                     ]}
                   />

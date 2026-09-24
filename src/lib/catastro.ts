@@ -179,6 +179,42 @@ export async function consultarIntersectantes(poligono: Punto[], epsg: number, s
 }
 
 /** abarca: superposición real; colinda: comparte borde; cercana: a menos de DISTANCIA_BUSQUEDA_M sin tocar. */
+export interface ResultadoBusqueda {
+  concesion: ConcesionCatastro
+  /** Envolvente en lon/lat [oeste, sur, este, norte] para encuadrar el mapa. */
+  bbox4326: [number, number, number, number]
+}
+
+function escaparSql(s: string): string {
+  return s.replace(/'/g, "''")
+}
+
+/** Busca por nombre o por rol (con o sin guiones). Resultado en lon/lat, solo para encuadrar. */
+export async function buscarConcesiones(texto: string, signal?: AbortSignal): Promise<ResultadoBusqueda[]> {
+  const t = texto.trim().toUpperCase()
+  if (t.length < 3) return []
+  const digitos = t.replace(/\D/g, "")
+  const condiciones = [`UPPER(NOMBRE) LIKE '%${escaparSql(t)}%'`]
+  if (digitos.length >= 4) condiciones.push(`NUMERO_ROL LIKE '%${digitos.slice(0, 9)}%'`)
+  const { entidades } = await consultar({ where: condiciones.join(" OR "), outSR: "4326", resultRecordCount: "25", orderByFields: "NOMBRE" }, signal)
+  return entidades.map(({ concesion, geometria }) => {
+    const pts = esMultiPoligono(geometria) ? geometria.flatMap((p) => p[0]) : geometria[0]
+    const xs = pts.map((p) => p[0])
+    const ys = pts.map((p) => p[1])
+    return { concesion, bbox4326: [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)] }
+  })
+}
+
+/** Anillo exterior (el de mayor área si es multipolígono) de una concesión, en el EPSG oficial pedido. */
+export async function obtenerAnillo(objectId: number, epsg: number, signal?: AbortSignal): Promise<Punto[]> {
+  const { entidades } = await consultar({ objectIds: String(objectId), outSR: String(epsg) }, signal)
+  const e = entidades[0]
+  if (!e) throw new Error("La concesión no se encontró en el catastro.")
+  const anillos = esMultiPoligono(e.geometria) ? e.geometria.map((p) => p[0]) : [e.geometria[0]]
+  const mayor = anillos.reduce((a, b) => (Math.abs(areaAnillo(b)) > Math.abs(areaAnillo(a)) ? b : a))
+  return mayor.map(([x, y]) => ({ n: y, e: x }))
+}
+
 export type Relacion = "abarca" | "colinda" | "cercana"
 export type Direccion = "norte" | "sur" | "este" | "oeste"
 

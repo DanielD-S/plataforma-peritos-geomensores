@@ -86,6 +86,37 @@ describe("grilla de pertenencias según el acta ANTAQUENA 1", () => {
   })
 })
 
+describe("convención de nombres configurable", () => {
+  it("acepta otro prefijo de lindero y otro inicio de interiores", () => {
+    const g = generarGrilla(ACTA.perimetroMensura, 100, 100, "MINA,", "L", 101)
+    expect(g.linderos[0].nombre).toBe("L1")
+    expect(g.linderos[0].nombreBase).toBe("L1")
+    expect(g.interiores[0].nombre).toBe("101")
+    expect(g.interiores[26].nombre).toBe("127")
+    expect(g.pertenencias[0].vertices.map((v) => v.nombre).join("-")).toBe("L1-101-110-L10")
+  })
+})
+
+describe("simplificación de anillos con ruido", () => {
+  it("redondea al paso, quita repetidos y colineales", async () => {
+    const { simplificarAnillo } = await import("./geometria")
+    const ruidoso = [
+      { n: 7_477_000.2, e: 465_000.1 },
+      { n: 7_476_999.8, e: 465_499.9 }, // colineal con el borde norte
+      { n: 7_477_000.1, e: 466_000.3 },
+      { n: 7_477_000.1, e: 466_000.3 }, // repetido
+      { n: 7_476_600.0, e: 466_000.0 },
+      { n: 7_476_599.7, e: 465_000.4 },
+    ]
+    expect(simplificarAnillo(ruidoso, 1)).toEqual([
+      { n: 7_477_000, e: 465_000 },
+      { n: 7_477_000, e: 466_000 },
+      { n: 7_476_600, e: 466_000 },
+      { n: 7_476_600, e: 465_000 },
+    ])
+  })
+})
+
 describe("azimut centesimal y distancia contra el acta", () => {
   const hm = { nombre: "HM", n: 7_476_968.934, e: 465_054.15 }
   const amarre = { nombre: "VERT. SED", n: 7_481_235.843, e: 462_933.594 }

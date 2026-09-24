@@ -208,6 +208,26 @@ export function Formulario({ concesion: c, actualizar, onImportar, editando, onE
             <input id="pre" className="campo" value={c.prefijoPertenencias} onChange={(e) => actualizar("prefijoPertenencias", e.target.value.toUpperCase())} placeholder="MINA," />
           </div>
         </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="etiqueta" htmlFor="prel">Prefijo linderos</label>
+            <input id="prel" className="campo" value={c.prefijoLindero} onChange={(e) => actualizar("prefijoLindero", e.target.value)} placeholder="L-" />
+          </div>
+          <div>
+            <label className="etiqueta" htmlFor="ini">Primer vértice interior</label>
+            <input
+              id="ini"
+              className="campo"
+              inputMode="numeric"
+              value={c.inicioInteriores ?? ""}
+              onChange={(e) => actualizar("inicioInteriores", e.target.value.trim() === "" ? null : Number(e.target.value) || null)}
+              placeholder="linderos + 1"
+            />
+          </div>
+        </div>
+        <p className="text-xs" style={{ color: "var(--pg-muted)" }}>
+          Los nombres de vértices también se pueden cambiar uno a uno en la pestaña Vértices.
+        </p>
       </section>
 
       <section className="flex flex-col gap-3">
