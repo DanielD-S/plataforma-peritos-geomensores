@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 import {
   activa as activaDe,
+  actualizarPerito as peritoEn,
   cargarCartera,
   duplicar as duplicarEn,
   eliminar as eliminarEn,
@@ -13,7 +14,7 @@ import {
   serializar,
   type Cartera,
 } from "../lib/cartera"
-import type { Concesion } from "../lib/modelo"
+import type { Concesion, Perito } from "../lib/modelo"
 
 function almacen(): Storage | null {
   try {
@@ -40,6 +41,7 @@ export function useCartera() {
     setCartera((c) => reemplazarActiva(c, (a) => ({ ...a, ...cambios })))
   }, [])
 
+  const setPerito = useCallback((p: Perito) => setCartera((c) => peritoEn(c, p)), [])
   const nueva = useCallback(() => setCartera(nuevaEn), [])
   const nuevaDesdeEjemplo = useCallback(() => setCartera(ejemploEn), [])
   const duplicar = useCallback(() => setCartera(duplicarEn), [])
@@ -55,5 +57,5 @@ export function useCartera() {
     [cartera],
   )
 
-  return { cartera, concesion, actualizar, actualizarVarios, nueva, nuevaDesdeEjemplo, duplicar, eliminar, seleccionar, exportar, importar }
+  return { cartera, concesion, perito: cartera.perito, setPerito, actualizar, actualizarVarios, nueva, nuevaDesdeEjemplo, duplicar, eliminar, seleccionar, exportar, importar }
 }

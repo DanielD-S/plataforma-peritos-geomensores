@@ -12,6 +12,7 @@
     "test:run": "vitest run"
   },
   "dependencies": {
+    "docx": "^9.7.2",
     "jszip": "^3.10.2",
     "leaflet": "^1.9.4",
     "polygon-clipping": "^0.15.7",

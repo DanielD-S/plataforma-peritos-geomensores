@@ -5,6 +5,7 @@ import { Formulario } from "./components/Formulario"
 import { ImportarDialogo, type DestinoPoligono, type DestinoPunto } from "./components/ImportarDialogo"
 import { Mapa } from "./components/Mapa"
 import { Revision } from "./components/Revision"
+import { SeccionActa } from "./components/SeccionActa"
 import { SeparadorHorizontal } from "./components/Separador"
 import { Tablas } from "./components/Tablas"
 import { useCartera } from "./hooks/useCartera"
@@ -30,7 +31,7 @@ function altoInicial(): number {
 }
 
 export default function App() {
-  const { cartera, concesion, actualizar, actualizarVarios, nueva, nuevaDesdeEjemplo, duplicar, eliminar, seleccionar, exportar, importar } = useCartera()
+  const { cartera, concesion, perito, setPerito, actualizar, actualizarVarios, nueva, nuevaDesdeEjemplo, duplicar, eliminar, seleccionar, exportar, importar } = useCartera()
   const derivados = useMemo(() => derivar(concesion), [concesion])
   const hallazgos = useMemo(() => validarConcesion(concesion, derivados), [concesion, derivados])
   const crs = crsPorEpsg(concesion.epsg)
@@ -118,6 +119,7 @@ export default function App() {
             paso={paso}
             onPaso={setPaso}
           />
+          <SeccionActa acta={concesion.acta} onActa={(a) => actualizar("acta", a)} perito={perito} onPerito={setPerito} />
         </aside>
 
         <section ref={columna} className="flex min-h-0 flex-col">
@@ -125,7 +127,7 @@ export default function App() {
             <Mapa concesion={concesion} derivados={derivados} editando={editando} paso={paso} onPerimetro={onPerimetro} />
           </div>
           <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border px-3 py-2" style={{ background: "var(--pg-panel)", borderColor: "var(--pg-line)" }}>
-            <Descargas concesion={concesion} />
+            <Descargas concesion={concesion} perito={perito} derivados={derivados} superposiciones={superposiciones.lista} />
             <Revision hallazgos={hallazgos} />
           </div>
           <SeparadorHorizontal alto={altoTablas} min={ALTO_MIN} max={altoMax()} onCambio={setAltoTablas} />

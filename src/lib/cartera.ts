@@ -2,7 +2,7 @@
  * Cartera de concesiones guardada en el navegador (localStorage), con exportación e
  * importación en JSON para respaldo o traspaso entre equipos. Sin backend por ahora.
  */
-import { CONCESION_EJEMPLO, concesionVacia, normalizarConcesion, nuevoId, type Concesion } from "./modelo"
+import { CONCESION_EJEMPLO, concesionVacia, normalizarConcesion, normalizarPerito, nuevoId, peritoVacio, type Concesion, type Perito } from "./modelo"
 
 export const CLAVE_CARTERA = "ppg.cartera.v1"
 /** Clave del prototipo anterior, con una sola concesión; se migra la primera vez. */
@@ -12,6 +12,8 @@ export interface Cartera {
   version: 1
   activaId: string
   concesiones: Concesion[]
+  /** Datos del perito, comunes a todas las concesiones. */
+  perito: Perito
 }
 
 interface AlmacenLike {
@@ -22,7 +24,7 @@ interface AlmacenLike {
 
 export function carteraInicial(): Cartera {
   const ejemplo = { ...CONCESION_EJEMPLO }
-  return { version: 1, activaId: ejemplo.id, concesiones: [ejemplo] }
+  return { version: 1, activaId: ejemplo.id, concesiones: [ejemplo], perito: peritoVacio() }
 }
 
 function parsear(json: string): Cartera | null {
@@ -32,10 +34,14 @@ function parsear(json: string): Cartera | null {
     const concesiones = o.concesiones.map(normalizarConcesion)
     if (concesiones.length === 0) return null
     const activaId = concesiones.some((c) => c.id === o.activaId) ? (o.activaId as string) : concesiones[0].id
-    return { version: 1, activaId, concesiones }
+    return { version: 1, activaId, concesiones, perito: normalizarPerito(o.perito) }
   } catch {
     return null
   }
+}
+
+export function actualizarPerito(cartera: Cartera, perito: Perito): Cartera {
+  return { ...cartera, perito }
 }
 
 export function cargarCartera(almacen: AlmacenLike | null): Cartera {
@@ -50,7 +56,7 @@ export function cargarCartera(almacen: AlmacenLike | null): Cartera {
     if (antigua) {
       const c = normalizarConcesion(JSON.parse(antigua))
       if (!c.nombre) return carteraInicial()
-      const cartera: Cartera = { version: 1, activaId: c.id, concesiones: [c] }
+      const cartera: Cartera = { version: 1, activaId: c.id, concesiones: [c], perito: peritoVacio() }
       almacen.setItem(CLAVE_CARTERA, JSON.stringify(cartera))
       almacen.removeItem(CLAVE_ANTIGUA)
       return cartera
@@ -111,7 +117,7 @@ export function seleccionar(cartera: Cartera, id: string): Cartera {
 }
 
 export function serializar(cartera: Cartera): string {
-  return JSON.stringify({ version: 1, exportadoEn: new Date().toISOString(), concesiones: cartera.concesiones }, null, 2)
+  return JSON.stringify({ version: 1, exportadoEn: new Date().toISOString(), perito: cartera.perito, concesiones: cartera.concesiones }, null, 2)
 }
 
 /**
@@ -127,5 +133,7 @@ export function importarJson(cartera: Cartera, json: string): { cartera: Cartera
   if (entrantes.length === 0) throw new Error("El archivo no contiene concesiones reconocibles.")
   const porId = new Map(cartera.concesiones.map((c) => [c.id, c]))
   for (const c of entrantes) porId.set(c.id, c)
-  return { cartera: { version: 1, activaId: entrantes[0].id, concesiones: [...porId.values()] }, importadas: entrantes.length }
+  const peritoEntrante = (o as { perito?: unknown }).perito
+  const perito = peritoEntrante && !cartera.perito.nombre ? normalizarPerito(peritoEntrante) : cartera.perito
+  return { cartera: { version: 1, activaId: entrantes[0].id, concesiones: [...porId.values()], perito }, importadas: entrantes.length }
 }
