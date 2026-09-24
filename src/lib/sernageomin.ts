@@ -31,8 +31,13 @@ export interface Derivados {
 }
 
 /** Geometrías derivadas de los datos ingresados. */
+/** Un P.I. en 0,0 es un formulario vacío, no una coordenada: en UTM sur caería en la Antártida. */
+export function piValido(pi: Punto): boolean {
+  return pi.n > 0 && pi.e > 0
+}
+
 export function derivar(c: Concesion): Derivados {
-  const manifestacion = rectanguloDesdePI(c.pi, c.ladoNS, c.ladoEO)
+  const manifestacion = piValido(c.pi) && c.ladoNS > 0 && c.ladoEO > 0 ? rectanguloDesdePI(c.pi, c.ladoNS, c.ladoEO) : []
   const solicitud = manifestacion
   const mensura = normalizarPerimetro(c.perimetroMensura.length >= 3 ? c.perimetroMensura : manifestacion)
   const grilla = generarGrilla(mensura, c.pertenenciaEO, c.pertenenciaNS, c.prefijoPertenencias)
@@ -54,7 +59,8 @@ function capaPoligono(base: string, nombre: string, poligono: Punto[], fecha: st
   const campos = fecha === null ? [C_NOMBRE, C_AREA] : [C_NOMBRE, C_AREA, C_FECHA]
   const atributos: Record<string, string | number> = { NOMBRE: nombre, AREA_HA: areaHa(poligono) }
   if (fecha !== null) atributos.FECHA = fecha
-  return crearShapefile(base, campos, [{ geometria: { tipo: "poligono", anillos: [anillo(poligono)] }, atributos }], prj)
+  const entidades = poligono.length >= 3 ? [{ geometria: { tipo: "poligono" as const, anillos: [anillo(poligono)] }, atributos }] : []
+  return crearShapefile(base, campos, entidades, prj)
 }
 
 function capaVertices(base: string, vertices: Vertice[], prj: string): ArchivosShapefile {

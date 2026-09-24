@@ -58,7 +58,7 @@ export function Mapa({ epsg, derivados: d, hito }: Props) {
 
   return (
     <div className="relative h-full w-full">
-      <MapContainer center={[-23, -69]} zoom={5} preferCanvas className="rounded-lg">
+      <MapContainer center={[-27, -70]} zoom={5} preferCanvas className="rounded-lg">
         <TileLayer
           url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
           attribution="Esri World Imagery · Catastro SERNAGEOMIN"
