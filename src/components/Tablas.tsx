@@ -1,4 +1,6 @@
 import { useState } from "react"
+import type { EstadoSuperposiciones } from "../hooks/useSuperposiciones"
+import { ETIQUETA_SITUACION, ETIQUETA_TIPO } from "../lib/catastro"
 import { descripcionPerimetro, relacionDesdePunto, type RelacionAzimut } from "../lib/geometria"
 import { azimutCl, coordenadaCl, numeroCl } from "../lib/formato"
 import type { Derivados } from "../lib/sernageomin"
@@ -6,9 +8,12 @@ import type { Derivados } from "../lib/sernageomin"
 interface Props {
   derivados: Derivados
   hito: { nombre: string; n: number; e: number } | null
+  superposiciones: EstadoSuperposiciones
 }
 
-type Pestana = "vertices" | "pertenencias" | "azimut" | "perimetro"
+type Pestana = "vertices" | "pertenencias" | "azimut" | "perimetro" | "catastro"
+
+const DIRECCION: Record<string, string> = { norte: "Al norte", sur: "Al sur", este: "Al este", oeste: "Al oeste" }
 
 function TablaRelacion({ filas }: { filas: RelacionAzimut[] }) {
   return (
@@ -36,16 +41,18 @@ function TablaRelacion({ filas }: { filas: RelacionAzimut[] }) {
 }
 
 /** Cuadros que van en el acta y en el plano, calculados desde la geometría. */
-export function Tablas({ derivados: d, hito }: Props) {
+export function Tablas({ derivados: d, hito, superposiciones: sp }: Props) {
   const [pestana, setPestana] = useState<Pestana>("vertices")
   const { grilla } = d
   const hitoValido = hito && hito.n > 0 && hito.e > 0 ? hito : null
+  const abarcadas = sp.lista.filter((s) => s.relacion === "abarca").length
 
   const pestanas: { id: Pestana; titulo: string }[] = [
     { id: "vertices", titulo: `Vértices (${grilla.todos.length})` },
     { id: "pertenencias", titulo: `Pertenencias (${grilla.pertenencias.length})` },
     { id: "perimetro", titulo: "Perímetro" },
     { id: "azimut", titulo: "H.M. a linderos" },
+    { id: "catastro", titulo: sp.cargando ? "Catastro…" : `Catastro (${sp.lista.length}${abarcadas ? `, ${abarcadas} superpuestas` : ""})` },
   ]
 
   return (
@@ -110,6 +117,57 @@ export function Tablas({ derivados: d, hito }: Props) {
           </table>
         )}
         {pestana === "perimetro" && <TablaRelacion filas={descripcionPerimetro(grilla.linderos)} />}
+        {pestana === "catastro" && (
+          <div>
+            {sp.error && (
+              <p className="p-3 text-xs" style={{ color: "#991b1b" }}>
+                {sp.error}
+              </p>
+            )}
+            {!sp.error && !sp.cargando && sp.lista.length === 0 && (
+              <p className="p-4 text-xs" style={{ color: "var(--pg-muted)" }}>
+                Ninguna concesión del catastro toca la mensura.
+              </p>
+            )}
+            {sp.lista.length > 0 && (
+              <table className="tabla">
+                <thead>
+                  <tr>
+                    <th>Relación</th>
+                    <th>Concesión</th>
+                    <th>Rol</th>
+                    <th>Tipo · Situación</th>
+                    <th>Titular</th>
+                    <th>Superposición (ha)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sp.lista.map((s) => (
+                    <tr key={s.concesion.id} style={s.relacion === "abarca" ? { background: "#fef3c7" } : undefined}>
+                      <td className="font-semibold">
+                        {s.relacion === "abarca"
+                          ? "Abarca"
+                          : s.relacion === "colinda"
+                            ? `Colinda ${DIRECCION[s.direccion].toLowerCase()}`
+                            : `A ${numeroCl(s.distanciaM, 0)} m ${DIRECCION[s.direccion].toLowerCase()}`}
+                      </td>
+                      <td>{s.concesion.nombre}</td>
+                      <td>{s.concesion.rol}</td>
+                      <td>
+                        {ETIQUETA_TIPO[s.concesion.tipo]} · {ETIQUETA_SITUACION[s.concesion.situacion]}
+                      </td>
+                      <td>{s.concesion.titular}</td>
+                      <td>{s.relacion === "abarca" ? numeroCl(s.areaHa, 2) : "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+            <p className="px-3 py-2 text-xs" style={{ color: "var(--pg-muted)" }}>
+              Fuente: catastro SERNAGEOMIN en línea. Las posiciones del catastro son referenciales; confirma vecinos y abarcamientos con los antecedentes registrales.
+            </p>
+          </div>
+        )}
         {pestana === "azimut" &&
           (hitoValido ? (
             <TablaRelacion filas={relacionDesdePunto({ ...hitoValido }, grilla.linderos)} />

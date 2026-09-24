@@ -15,7 +15,11 @@ los datos de una mensura, sin pasar por QGIS ni ArcGIS.
   vértices interiores numerados desde `n+1` por filas de norte a sur, y cada pertenencia con sus vértices NW-NE-SE-SW.
 - Cuadros calculados: vértices, individualización de pertenencias, descripción del perímetro y relación azimut
   (grados centesimales) y distancia desde el hito de mensura a cada lindero.
-- Previsualización en mapa satelital.
+- Previsualización en mapa satelital con el **catastro SERNAGEOMIN** en vivo (mismo servicio ArcGIS que usa Pudumaps;
+  exploración en azul, explotación en naranja, en trámite punteado).
+- **Vecinas y superposiciones**: consulta el catastro con el perímetro de la mensura y clasifica cada concesión como
+  *abarca* (con el área de superposición), *colinda* (con el lado: norte, sur, este u oeste) o *cercana* (con la distancia).
+  Es la base de las secciones "Pertenencias vecinas" y "Abarcamiento" del acta.
 - Descarga de `Manifestacion.zip`, `Solicitud_mensura.zip`, `Mensura.zip`, `Pertenencias.zip` y `Hito_de_mensura.zip`,
   cada uno con `.shp`, `.shx`, `.dbf`, `.prj` y `.cpg`.
 
@@ -35,6 +39,9 @@ npm run build      # tsc -b + vite build
 Las pruebas en `src/lib/geometria.test.ts` reproducen el acta de mensura real de
 **ANTAQUENA 1 1 AL 22** (Sierra Gorda, abril 2026): 22 pertenencias de 1 ha en un perímetro en L de 10 linderos,
 numeración de vértices interiores 11 a 37, y azimuts y distancias desde el hito con cuatro decimales.
+Con el catastro en línea, la pestaña "Catastro" del mismo ejemplo reproduce las siete vecinas que lista el acta
+(Gordon 5 al norte, Gordon 7 al este, Talita 3, Talita 4 y Pobreza al sur, Julio al oeste) y el abarcamiento parcial
+de Trece de Mayo 1/36.
 
 ## Decisiones donde la guía es ambigua
 

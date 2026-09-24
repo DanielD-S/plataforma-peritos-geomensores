@@ -4,6 +4,7 @@ import { Formulario } from "./components/Formulario"
 import { Mapa } from "./components/Mapa"
 import { Tablas } from "./components/Tablas"
 import { useConcesion } from "./hooks/useConcesion"
+import { useSuperposiciones } from "./hooks/useSuperposiciones"
 import { crsPorEpsg } from "./lib/crs"
 import { numeroCl } from "./lib/formato"
 import { derivar } from "./lib/sernageomin"
@@ -12,6 +13,7 @@ export default function App() {
   const { concesion, actualizar, cargarEjemplo, limpiar } = useConcesion()
   const derivados = useMemo(() => derivar(concesion), [concesion])
   const crs = crsPorEpsg(concesion.epsg)
+  const superposiciones = useSuperposiciones(derivados.mensura, concesion.epsg)
 
   return (
     <div className="flex h-full flex-col">
@@ -48,7 +50,7 @@ export default function App() {
             <Descargas concesion={concesion} />
           </div>
           <div className="min-h-0 overflow-hidden rounded-lg border" style={{ background: "var(--pg-panel)", borderColor: "var(--pg-line)" }}>
-            <Tablas derivados={derivados} hito={concesion.hito} />
+            <Tablas derivados={derivados} hito={concesion.hito} superposiciones={superposiciones} />
           </div>
         </section>
       </main>
