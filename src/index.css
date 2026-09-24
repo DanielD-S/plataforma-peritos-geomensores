@@ -1,0 +1,73 @@
+@import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
+
+:root {
+  --pg-bg: #f4f1ea;
+  --pg-panel: #ffffff;
+  --pg-ink: #1f2933;
+  --pg-muted: #6b7280;
+  --pg-line: #e2ddd3;
+  --pg-primary: #0f766e;
+  --pg-primary-ink: #ffffff;
+  --pg-accent: #b45309;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  background: var(--pg-bg);
+  color: var(--pg-ink);
+  font-family: ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
+}
+
+.leaflet-container {
+  height: 100%;
+  width: 100%;
+  background: #cfd6dc;
+}
+
+.campo {
+  @apply w-full rounded-md border px-2.5 py-1.5 text-sm outline-none focus:ring-2;
+  border-color: var(--pg-line);
+  background: #fff;
+}
+.campo:focus {
+  --tw-ring-color: color-mix(in srgb, var(--pg-primary) 35%, transparent);
+}
+.etiqueta {
+  @apply mb-1 block text-xs font-semibold uppercase tracking-wide;
+  color: var(--pg-muted);
+}
+.boton {
+  @apply inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+}
+.boton-primario {
+  background: var(--pg-primary);
+  color: var(--pg-primary-ink);
+}
+.boton-primario:hover:not(:disabled) {
+  background: #115e59;
+}
+.boton-secundario {
+  background: #fff;
+  border: 1px solid var(--pg-line);
+  color: var(--pg-ink);
+}
+.boton-secundario:hover:not(:disabled) {
+  background: #faf8f3;
+}
+.tabla {
+  @apply w-full border-collapse text-xs;
+}
+.tabla th {
+  @apply sticky top-0 px-2 py-1 text-left font-semibold;
+  background: #faf8f3;
+  color: var(--pg-muted);
+  border-bottom: 1px solid var(--pg-line);
+}
+.tabla td {
+  @apply px-2 py-1 font-mono;
+  border-bottom: 1px solid var(--pg-line);
+}
