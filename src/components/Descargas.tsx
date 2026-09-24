@@ -12,7 +12,7 @@ interface Props {
 }
 
 const ZIPS = ["Manifestacion.zip", "Solicitud_mensura.zip", "Mensura.zip", "Pertenencias.zip", "Hito_de_mensura.zip"] as const
-type Descarga = (typeof ZIPS)[number] | "todo" | "acta"
+type Descarga = (typeof ZIPS)[number] | "todo" | "acta" | "dxf"
 
 /** Descargas: los 5 ZIP oficiales (o todos juntos) y el acta de mensura en Word. */
 export function Descargas({ concesion, perito, derivados, superposiciones }: Props) {
@@ -28,6 +28,11 @@ export function Descargas({ concesion, perito, derivados, superposiciones }: Pro
         // La librería de Word es pesada: se carga solo al pedir el acta.
         const { generarActaDocx } = await import("../lib/acta")
         descargarBlob(`Acta_mensura_${slug}.docx`, await generarActaDocx({ concesion, perito, derivados, superposiciones }))
+        return
+      }
+      if (nombre === "dxf") {
+        const { generarDxf } = await import("../lib/dxf")
+        descargarBlob(`Plano_mensura_${slug}.dxf`, new Blob([generarDxf({ concesion, perito, derivados })], { type: "application/dxf" }))
         return
       }
       const paquete = await generarPaquete(concesion)
@@ -52,6 +57,9 @@ export function Descargas({ concesion, perito, derivados, superposiciones }: Pro
       ))}
       <button className="boton boton-primario" type="button" disabled={ocupado !== null} onClick={() => descargar("acta")} style={{ background: "var(--pg-accent)" }}>
         {ocupado === "acta" ? "Generando…" : "Acta de mensura (Word)"}
+      </button>
+      <button className="boton boton-primario" type="button" disabled={ocupado !== null} onClick={() => descargar("dxf")} style={{ background: "var(--pg-accent)" }}>
+        Plano (DXF)
       </button>
       {error && (
         <span className="rounded-md px-2 py-1 text-xs" style={{ background: "#fee2e2", color: "#991b1b" }}>
