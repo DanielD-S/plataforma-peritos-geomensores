@@ -56,6 +56,19 @@ export default function App() {
   // Al cambiar de concesión se sale del modo edición.
   useEffect(() => setEditando(false), [concesion.id])
 
+  // Sin conexión funciona todo salvo el catastro en línea y las imágenes satelitales no vistas.
+  const [enLinea, setEnLinea] = useState(() => (typeof navigator === "undefined" ? true : navigator.onLine))
+  useEffect(() => {
+    const on = () => setEnLinea(true)
+    const off = () => setEnLinea(false)
+    window.addEventListener("online", on)
+    window.addEventListener("offline", off)
+    return () => {
+      window.removeEventListener("online", on)
+      window.removeEventListener("offline", off)
+    }
+  }, [])
+
   const onPerimetro = useCallback((p: Punto[]) => actualizar("perimetroMensura", p), [actualizar])
 
   function cargarPoligono(destino: DestinoPoligono, anillo: Punto[]) {
@@ -106,6 +119,11 @@ export default function App() {
           </p>
         </div>
         <div className="flex items-center gap-4 text-xs" style={{ color: "var(--pg-muted)" }}>
+          {!enLinea && (
+            <span className="rounded-full px-2.5 py-1 font-semibold" style={{ background: "#fef3c7", color: "#92400e" }} title="Sin conexión: no hay catastro en línea ni imágenes nuevas; todo lo demás funciona">
+              Sin conexión
+            </span>
+          )}
           <span className="rounded-full border px-2.5 py-1 font-semibold" style={{ borderColor: "var(--pg-line)", color: "var(--pg-ink)" }}>
             {crs.nombre} · EPSG {crs.epsg}
           </span>

@@ -35,6 +35,12 @@ Sernageomin. Ver `README.md` para el alcance y la hoja de ruta.
 - `src/lib/catastro.ts` — consulta en vivo al ArcGIS de Sernageomin (CORS abierto): capa por vista y vecinas/superposiciones.
 - `src/lib/importar.ts` — lectores propios de `.shp`/`.dbf`, KML/KMZ, detección del `.prj`; reproyecta solo si hace falta y advierte.
 - `src/lib/validar.ts` — revisión (errores y avisos) que se muestra en el botón "Revisión"; no bloquea descargas.
+- `src/lib/geodesia.ts` — geográficas y convergencia en el MISMO datum (inversa de la proyección, sin towgs84).
+- `src/lib/textos.ts` — redacción de las secciones del acta; sus pruebas reproducen frases textuales del acta real.
+- `src/lib/acta.ts` — .docx con la librería `docx` (importada bajo demanda desde `Descargas`).
+- `src/lib/dxf.ts` — escritor DXF R12 propio. Validar cambios con `PPG_SALIDA=.salida npx vitest run src/lib/dxf.test.ts`
+  y `python -c "from ezdxf import recover; d,a=recover.readfile('.salida/plano_antaquena.dxf'); print(len(a.errors))"`.
+- PWA con `vite-plugin-pwa` (`vite.config.ts`): la app entera se precachea; teselas CacheFirst, catastro NetworkFirst.
 - `src/components/` — `Cartera`, `Formulario`, `Mapa` (Leaflet; incluye `CapaCatastro` y `EditorVertices`), `Tablas`, `Descargas`, `Revision`, `ImportarDialogo`, `Separador`.
 - Sin backend por ahora: todo el estado vive en el navegador.
 

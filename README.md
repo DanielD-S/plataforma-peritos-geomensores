@@ -35,6 +35,18 @@ los datos de una mensura, sin pasar por QGIS ni ArcGIS.
 - Descarga de `Manifestacion.zip`, `Solicitud_mensura.zip`, `Mensura.zip`, `Pertenencias.zip` y `Hito_de_mensura.zip`,
   cada uno con `.shp`, `.shx`, `.dbf`, `.prj` y `.cpg`.
 
+- **Textos del acta** redactados automáticamente con la estructura de las actas (distribución de vértices,
+  individualización de pertenencias, ubicación del H.M. con geográficas sexagesimales y convergencia, relación
+  con el amarre, vecinas y abarcamiento), con botón de copiar.
+- **Acta de mensura en Word** (.docx) completa: encabezado y párrafo de causa desde los antecedentes ingresados,
+  cuadros, secciones calculadas y textos libres del perito. Lo que falta queda marcado como `[COMPLETAR]`.
+- **Plano de mensura en DXF** (R12, lo abre AutoCAD y QGIS) con capas por elemento, cuadros de coordenadas y
+  azimut, vértices geodésicos, norte y una carátula inicial.
+- **Nombres de vértices** configurables: prefijo de linderos, primer número interior y alias por vértice.
+- **Búsqueda en el catastro** por nombre o rol y uso de la geometría de una concesión como base.
+- **Aplicación instalable y sin conexión** (PWA): en terreno funciona todo salvo el catastro en línea y las
+  imágenes satelitales que no se hayan visto antes.
+
 Todo se genera en el navegador. No hay backend todavía y los datos quedan en `localStorage`
 (exporta la cartera a JSON para no perderlos).
 
@@ -68,7 +80,8 @@ de Trece de Mayo 1/36.
 
 ## Hoja de ruta
 
-1. **Etapa 1** (funcionalidad completa en este prototipo). Pendiente para producto: cuentas de perito y
-   persistencia en Supabase.
-2. **Etapa 2**: plano de mensura en DXF.
-3. **Etapa 3**: acta de mensura y escritos en DOCX, con las secciones calculadas desde la geometría.
+1. **Etapa 1**: completa en este prototipo.
+2. **Etapa 2**: plano DXF con una primera carátula; la simbología y la carátula definitivas se ajustan con los
+   planos de referencia de la asociación.
+3. **Etapa 3**: acta de mensura lista; faltan los escritos de manifestación y solicitud de mensura.
+4. **Producto**: cuentas de perito, persistencia en Supabase, historial y fotos por vértice.
