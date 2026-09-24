@@ -19,7 +19,7 @@ function Encuadre({ puntos }: { puntos: LatLng[] }) {
   const clave = puntos.map((p) => p.join(",")).join(";")
   useEffect(() => {
     if (puntos.length === 0) return
-    map.fitBounds(L.latLngBounds(puntos), { padding: [24, 24] })
+    map.fitBounds(L.latLngBounds(puntos), { padding: [24, 24], maxZoom: 17 })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clave, map])
   return null
@@ -51,6 +51,7 @@ export function Mapa({ epsg, derivados: d, hito }: Props) {
         url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
         attribution="Esri World Imagery"
         maxZoom={19}
+        maxNativeZoom={17}
       />
       <Encuadre puntos={todos} />
       {manifestacion.length >= 3 && (
