@@ -38,8 +38,8 @@ export function piValido(pi: Punto): boolean {
 
 export function derivar(c: Concesion): Derivados {
   const manifestacion = piValido(c.pi) && c.ladoNS > 0 && c.ladoEO > 0 ? rectanguloDesdePI(c.pi, c.ladoNS, c.ladoEO) : []
-  const solicitud = manifestacion
-  const mensura = normalizarPerimetro(c.perimetroMensura.length >= 3 ? c.perimetroMensura : manifestacion)
+  const solicitud = normalizarPerimetro(c.perimetroSolicitud.length >= 3 ? c.perimetroSolicitud : manifestacion)
+  const mensura = normalizarPerimetro(c.perimetroMensura.length >= 3 ? c.perimetroMensura : solicitud)
   const grilla = generarGrilla(mensura, c.pertenenciaEO, c.pertenenciaNS, c.prefijoPertenencias)
   return {
     manifestacion,

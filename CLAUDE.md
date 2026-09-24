@@ -30,9 +30,19 @@ Sernageomin. Ver `README.md` para el alcance y la hoja de ruta.
 - `src/lib/shapefile/` — escritor propio de `.shp/.shx/.dbf` (sin dependencias). Campos DBF ≤ 10 caracteres ASCII.
 - `src/lib/sernageomin.ts` — arma los 7 shapefiles y los 5 ZIP de la guía. Documenta ahí toda decisión
   donde la guía sea ambigua.
-- `src/lib/modelo.ts` — tipo `Concesion` y el caso de ejemplo del acta.
-- `src/components/` — `Formulario`, `Mapa` (Leaflet), `Tablas`, `Descargas`.
-- Estado en `src/hooks/useConcesion.ts`, persistido en `localStorage` (sin backend por ahora).
+- `src/lib/modelo.ts` — tipo `Concesion`, `normalizarConcesion` (migra datos guardados con modelos anteriores) y el caso de ejemplo del acta.
+- `src/lib/cartera.ts` — varias concesiones en `localStorage`, exportar/importar JSON. Hook: `src/hooks/useCartera.ts`.
+- `src/lib/catastro.ts` — consulta en vivo al ArcGIS de Sernageomin (CORS abierto): capa por vista y vecinas/superposiciones.
+- `src/lib/importar.ts` — lectores propios de `.shp`/`.dbf`, KML/KMZ, detección del `.prj`; reproyecta solo si hace falta y advierte.
+- `src/lib/validar.ts` — revisión (errores y avisos) que se muestra en el botón "Revisión"; no bloquea descargas.
+- `src/components/` — `Cartera`, `Formulario`, `Mapa` (Leaflet; incluye `CapaCatastro` y `EditorVertices`), `Tablas`, `Descargas`, `Revision`, `ImportarDialogo`, `Separador`.
+- Sin backend por ahora: todo el estado vive en el navegador.
+
+## Al agregar campos al modelo
+
+1. Añadirlos a `Concesion` y a `concesionVacia()` en `modelo.ts`.
+2. Cubrirlos en `normalizarConcesion` con un valor por defecto: hay carteras guardadas con versiones anteriores.
+3. Si van a un shapefile, documentar el nombre DBF (≤ 10 caracteres ASCII) en `sernageomin.ts`.
 
 ## Estilo
 

@@ -7,11 +7,13 @@ import type { Derivados } from "../lib/sernageomin"
 
 interface Props {
   derivados: Derivados
-  hito: { nombre: string; n: number; e: number } | null
+  hito: { nombre: string; n: number; e: number; altura?: number | null } | null
+  amarre: { nombre: string; n: number; e: number; altura?: number | null } | null
+  auxiliares: { nombre: string; n: number; e: number; altura?: number | null }[]
   superposiciones: EstadoSuperposiciones
 }
 
-type Pestana = "vertices" | "pertenencias" | "azimut" | "perimetro" | "catastro"
+type Pestana = "vertices" | "pertenencias" | "azimut" | "perimetro" | "geodesia" | "catastro"
 
 const DIRECCION: Record<string, string> = { norte: "Al norte", sur: "Al sur", este: "Al este", oeste: "Al oeste" }
 
@@ -41,17 +43,26 @@ function TablaRelacion({ filas }: { filas: RelacionAzimut[] }) {
 }
 
 /** Cuadros que van en el acta y en el plano, calculados desde la geometría. */
-export function Tablas({ derivados: d, hito, superposiciones: sp }: Props) {
+export function Tablas({ derivados: d, hito, amarre, auxiliares, superposiciones: sp }: Props) {
   const [pestana, setPestana] = useState<Pestana>("vertices")
   const { grilla } = d
-  const hitoValido = hito && hito.n > 0 && hito.e > 0 ? hito : null
+  const valido = <T extends { n: number; e: number }>(p: T | null): T | null => (p && p.n > 0 && p.e > 0 ? p : null)
+  const hitoValido = valido(hito)
+  const amarreValido = valido(amarre)
+  const auxValidos = auxiliares.filter((a) => a.n > 0 && a.e > 0)
   const abarcadas = sp.lista.filter((s) => s.relacion === "abarca").length
+  const geodesicos = [
+    ...(amarreValido ? [{ ...amarreValido, rol: "Amarre" }] : []),
+    ...auxValidos.map((a) => ({ ...a, rol: "Auxiliar" })),
+    ...(hitoValido ? [{ ...hitoValido, rol: "Hito de mensura" }] : []),
+  ]
 
   const pestanas: { id: Pestana; titulo: string }[] = [
     { id: "vertices", titulo: `Vértices (${grilla.todos.length})` },
     { id: "pertenencias", titulo: `Pertenencias (${grilla.pertenencias.length})` },
     { id: "perimetro", titulo: "Perímetro" },
     { id: "azimut", titulo: "H.M. a linderos" },
+    { id: "geodesia", titulo: `Geodesia (${geodesicos.length})` },
     { id: "catastro", titulo: sp.cargando ? "Catastro…" : `Catastro (${sp.lista.length}${abarcadas ? `, ${abarcadas} superpuestas` : ""})` },
   ]
 
@@ -117,6 +128,50 @@ export function Tablas({ derivados: d, hito, superposiciones: sp }: Props) {
           </table>
         )}
         {pestana === "perimetro" && <TablaRelacion filas={descripcionPerimetro(grilla.linderos)} />}
+        {pestana === "geodesia" &&
+          (geodesicos.length === 0 ? (
+            <p className="p-4 text-xs" style={{ color: "var(--pg-muted)" }}>
+              Ingresa el hito de mensura y el punto de amarre en "Referencia geodésica" para ver el cuadro de vértices y la ligazón.
+            </p>
+          ) : (
+            <div className="flex flex-col gap-3 p-2">
+              <table className="tabla">
+                <thead>
+                  <tr>
+                    <th>Vértice</th>
+                    <th>Función</th>
+                    <th>Norte (m)</th>
+                    <th>Este (m)</th>
+                    <th>Elevación (m s.n.m.)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {geodesicos.map((g, i) => (
+                    <tr key={i}>
+                      <td>{g.nombre || "—"}</td>
+                      <td>{g.rol}</td>
+                      <td>{coordenadaCl(g.n)}</td>
+                      <td>{coordenadaCl(g.e)}</td>
+                      <td>{g.altura != null ? numeroCl(g.altura, 2) : "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {hitoValido && amarreValido && (
+                <>
+                  <p className="px-2 text-xs font-semibold" style={{ color: "var(--pg-muted)" }}>
+                    Relación del H.M. con el punto de amarre y ligazón del amarre a los linderos
+                  </p>
+                  <TablaRelacion
+                    filas={[
+                      ...relacionDesdePunto({ ...hitoValido, nombre: hitoValido.nombre || "H.M." }, [{ ...amarreValido, nombre: amarreValido.nombre || "Amarre", tipo: "lindero" }]),
+                      ...relacionDesdePunto({ ...amarreValido, nombre: amarreValido.nombre || "Amarre" }, grilla.linderos),
+                    ]}
+                  />
+                </>
+              )}
+            </div>
+          ))}
         {pestana === "catastro" && (
           <div>
             {sp.error && (

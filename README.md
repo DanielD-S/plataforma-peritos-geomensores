@@ -7,10 +7,22 @@ los datos de una mensura, sin pasar por QGIS ni ArcGIS.
 
 ## Qué hace hoy
 
+- **Cartera de concesiones** guardada en el navegador: varias concesiones, duplicar, eliminar, y exportar e importar
+  toda la cartera en JSON para respaldo o traspaso entre equipos.
 - Ingreso de la concesión: nombre, rol, sistema de coordenadas oficial (PSAD56 / SAD69, husos 18 y 19),
   fechas de manifestación, solicitud de mensura y mensura.
-- Manifestación como rectángulo centrado en el punto de interés.
-- Perímetro de la mensura editable (admite formas en L o cualquier polígono rectilíneo).
+- Manifestación como rectángulo centrado en el punto de interés; solicitud de mensura y mensura con perímetro
+  propio (admite formas en L o cualquier polígono rectilíneo).
+- **Edición de vértices sobre el mapa**: arrastrar linderos con ajuste a paso (1, 10, 50 o 100 m), insertar
+  vértices en la mitad de un lado y quitarlos con clic derecho.
+- **Importar shapefile (ZIP o .shp), KML o KMZ** como manifestación, solicitud o mensura, y puntos como hito,
+  amarre o auxiliar. Si el archivo trae `.prj` en el EPSG de destino las coordenadas se conservan exactas; si viene
+  en otro sistema se reproyecta y se advierte que es referencial.
+- **Referencia geodésica**: hito de mensura, punto de amarre y puntos auxiliares con elevación; cuadro de vértices
+  geodésicos, relación del hito con el amarre y ligazón del amarre a los linderos.
+- **Revisión** antes de descargar: datos faltantes, fechas fuera de orden, rol mal formado, coordenadas fuera del
+  huso o de Chile, lados que no son múltiplos de la pertenencia, zonas sin pertenencias, mensura fuera de la
+  solicitud y solicitud fuera de la manifestación.
 - Grilla de pertenencias con la convención de las actas: linderos `L-1..L-n` desde el NW en sentido horario,
   vértices interiores numerados desde `n+1` por filas de norte a sur, y cada pertenencia con sus vértices NW-NE-SE-SW.
 - Cuadros calculados: vértices, individualización de pertenencias, descripción del perímetro y relación azimut
@@ -23,7 +35,8 @@ los datos de una mensura, sin pasar por QGIS ni ArcGIS.
 - Descarga de `Manifestacion.zip`, `Solicitud_mensura.zip`, `Mensura.zip`, `Pertenencias.zip` y `Hito_de_mensura.zip`,
   cada uno con `.shp`, `.shx`, `.dbf`, `.prj` y `.cpg`.
 
-Todo se genera en el navegador. No hay backend todavía y los datos quedan en `localStorage`.
+Todo se genera en el navegador. No hay backend todavía y los datos quedan en `localStorage`
+(exporta la cartera a JSON para no perderlos).
 
 ## Desarrollo
 
@@ -55,6 +68,7 @@ de Trece de Mayo 1/36.
 
 ## Hoja de ruta
 
-1. **Etapa 1**: este prototipo, más cuentas de perito, persistencia en Supabase y cruce con el catastro Sernageomin.
+1. **Etapa 1** (funcionalidad completa en este prototipo). Pendiente para producto: cuentas de perito y
+   persistencia en Supabase.
 2. **Etapa 2**: plano de mensura en DXF.
 3. **Etapa 3**: acta de mensura y escritos en DOCX, con las secciones calculadas desde la geometría.
