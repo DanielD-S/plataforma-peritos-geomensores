@@ -32,12 +32,29 @@ function estilo(f?: FeatureLike): PathOptions {
   }
 }
 
+function escapar(s: string): string {
+  return s.replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch] ?? ch)
+}
+
+/** Ficha de la concesión, solo al hacer clic sobre el polígono. */
 function alCrear(f: FeatureLike, capa: Layer) {
   const c = desdeAtributos(f.properties ?? {})
-  capa.bindTooltip(
-    `<b>${c.nombre}</b><br>Rol ${c.rol}<br>${ETIQUETA_TIPO[c.tipo]} · ${ETIQUETA_SITUACION[c.situacion]}<br>${c.titular}${c.hectareas != null ? `<br>${c.hectareas} ha` : ""}`,
-    { sticky: true },
-  )
+  const filas: [string, string][] = [
+    ["Rol", c.rol],
+    ["Tipo", ETIQUETA_TIPO[c.tipo]],
+    ["Situación", ETIQUETA_SITUACION[c.situacion]],
+    ["Titular", c.titular],
+    ["Superficie", c.hectareas != null ? `${c.hectareas} ha` : ""],
+    ["Comuna", c.comuna],
+    ["Datum", `${c.datum} huso ${c.huso}`],
+  ]
+  const cuerpo = filas
+    .filter(([, v]) => v)
+    .map(([k, v]) => `<tr><td style="color:#6b7280;padding-right:8px">${k}</td><td>${escapar(v)}</td></tr>`)
+    .join("")
+  capa.bindPopup(`<div style="font-size:12px"><b>${escapar(c.nombre)}</b><table style="margin-top:4px">${cuerpo}</table></div>`, {
+    maxWidth: 320,
+  })
 }
 
 /**
