@@ -1,19 +1,20 @@
 import { useState } from "react"
 import type { EstadoSuperposiciones } from "../hooks/useSuperposiciones"
 import { ETIQUETA_SITUACION, ETIQUETA_TIPO } from "../lib/catastro"
+import { aGeograficas, formatoSexagesimal } from "../lib/geodesia"
 import { descripcionPerimetro, relacionDesdePunto, type RelacionAzimut } from "../lib/geometria"
 import { azimutCl, coordenadaCl, numeroCl } from "../lib/formato"
+import type { Concesion } from "../lib/modelo"
 import type { Derivados } from "../lib/sernageomin"
+import { textoDistribucionVertices, textoHito, textoIndividualizacion, textoPuntoInteres, textoRelacionAmarre, textoVecinas } from "../lib/textos"
 
 interface Props {
+  concesion: Concesion
   derivados: Derivados
-  hito: { nombre: string; n: number; e: number; altura?: number | null } | null
-  amarre: { nombre: string; n: number; e: number; altura?: number | null } | null
-  auxiliares: { nombre: string; n: number; e: number; altura?: number | null }[]
   superposiciones: EstadoSuperposiciones
 }
 
-type Pestana = "vertices" | "pertenencias" | "azimut" | "perimetro" | "geodesia" | "catastro"
+type Pestana = "vertices" | "pertenencias" | "azimut" | "perimetro" | "geodesia" | "catastro" | "textos"
 
 const DIRECCION: Record<string, string> = { norte: "Al norte", sur: "Al sur", este: "Al este", oeste: "Al oeste" }
 
@@ -42,20 +43,55 @@ function TablaRelacion({ filas }: { filas: RelacionAzimut[] }) {
   )
 }
 
+function BotonCopiar({ texto }: { texto: string }) {
+  const [ok, setOk] = useState(false)
+  return (
+    <button
+      type="button"
+      className="boton boton-secundario !px-2 !py-0.5 !text-xs"
+      onClick={async () => {
+        try {
+          await navigator.clipboard.writeText(texto)
+          setOk(true)
+          setTimeout(() => setOk(false), 1500)
+        } catch {
+          /* sin portapapeles */
+        }
+      }}
+    >
+      {ok ? "Copiado" : "Copiar"}
+    </button>
+  )
+}
+
+function Seccion({ titulo, texto }: { titulo: string; texto: string }) {
+  return (
+    <div className="rounded-md border p-2" style={{ borderColor: "var(--pg-line)" }}>
+      <div className="mb-1 flex items-center justify-between">
+        <span className="text-xs font-bold uppercase tracking-wide" style={{ color: "var(--pg-muted)" }}>
+          {titulo}
+        </span>
+        <BotonCopiar texto={texto} />
+      </div>
+      <p className="whitespace-pre-wrap text-xs leading-relaxed">{texto}</p>
+    </div>
+  )
+}
+
 /** Cuadros que van en el acta y en el plano, calculados desde la geometría. */
-export function Tablas({ derivados: d, hito, amarre, auxiliares, superposiciones: sp }: Props) {
+export function Tablas({ concesion: c, derivados: d, superposiciones: sp }: Props) {
   const [pestana, setPestana] = useState<Pestana>("vertices")
   const { grilla } = d
   const valido = <T extends { n: number; e: number }>(p: T | null): T | null => (p && p.n > 0 && p.e > 0 ? p : null)
-  const hitoValido = valido(hito)
-  const amarreValido = valido(amarre)
-  const auxValidos = auxiliares.filter((a) => a.n > 0 && a.e > 0)
+  const hito = valido(c.hito)
+  const amarre = valido(c.amarre)
+  const auxiliares = c.auxiliares.filter((a) => a.n > 0 && a.e > 0)
   const abarcadas = sp.lista.filter((s) => s.relacion === "abarca").length
   const geodesicos = [
-    ...(amarreValido ? [{ ...amarreValido, rol: "Amarre" }] : []),
-    ...auxValidos.map((a) => ({ ...a, rol: "Auxiliar" })),
-    ...(hitoValido ? [{ ...hitoValido, rol: "Hito de mensura" }] : []),
-  ]
+    ...(amarre ? [{ ...amarre, rol: "Amarre" }] : []),
+    ...auxiliares.map((a) => ({ ...a, rol: "Auxiliar" })),
+    ...(hito ? [{ ...hito, rol: "Hito de mensura" }] : []),
+  ].map((g) => ({ ...g, geo: aGeograficas(g, c.epsg) }))
 
   const pestanas: { id: Pestana; titulo: string }[] = [
     { id: "vertices", titulo: `Vértices (${grilla.todos.length})` },
@@ -64,17 +100,21 @@ export function Tablas({ derivados: d, hito, amarre, auxiliares, superposiciones
     { id: "azimut", titulo: "H.M. a linderos" },
     { id: "geodesia", titulo: `Geodesia (${geodesicos.length})` },
     { id: "catastro", titulo: sp.cargando ? "Catastro…" : `Catastro (${sp.lista.length}${abarcadas ? `, ${abarcadas} superpuestas` : ""})` },
+    { id: "textos", titulo: "Textos del acta" },
   ]
+
+  const individualizacion = textoIndividualizacion(grilla, c.prefijoPertenencias, c.pertenenciaEO, c.pertenenciaNS)
+  const vecinas = textoVecinas(sp.lista)
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex gap-1 border-b px-2" style={{ borderColor: "var(--pg-line)" }}>
+      <div className="flex gap-1 overflow-x-auto border-b px-2" style={{ borderColor: "var(--pg-line)" }}>
         {pestanas.map((p) => (
           <button
             key={p.id}
             type="button"
             onClick={() => setPestana(p.id)}
-            className="px-3 py-2 text-xs font-semibold"
+            className="whitespace-nowrap px-3 py-2 text-xs font-semibold"
             style={{
               color: pestana === p.id ? "var(--pg-primary)" : "var(--pg-muted)",
               borderBottom: pestana === p.id ? "2px solid var(--pg-primary)" : "2px solid transparent",
@@ -128,6 +168,14 @@ export function Tablas({ derivados: d, hito, amarre, auxiliares, superposiciones
           </table>
         )}
         {pestana === "perimetro" && <TablaRelacion filas={descripcionPerimetro(grilla.linderos)} />}
+        {pestana === "azimut" &&
+          (hito ? (
+            <TablaRelacion filas={relacionDesdePunto({ ...hito, nombre: hito.nombre || "H.M." }, grilla.linderos)} />
+          ) : (
+            <p className="p-4 text-xs" style={{ color: "var(--pg-muted)" }}>
+              Ingresa las coordenadas del hito de mensura para calcular azimut y distancia a cada lindero.
+            </p>
+          ))}
         {pestana === "geodesia" &&
           (geodesicos.length === 0 ? (
             <p className="p-4 text-xs" style={{ color: "var(--pg-muted)" }}>
@@ -142,7 +190,10 @@ export function Tablas({ derivados: d, hito, amarre, auxiliares, superposiciones
                     <th>Función</th>
                     <th>Norte (m)</th>
                     <th>Este (m)</th>
-                    <th>Elevación (m s.n.m.)</th>
+                    <th>Elevación (m)</th>
+                    <th>Latitud</th>
+                    <th>Longitud</th>
+                    <th>Convergencia (g)</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -153,19 +204,25 @@ export function Tablas({ derivados: d, hito, amarre, auxiliares, superposiciones
                       <td>{coordenadaCl(g.n)}</td>
                       <td>{coordenadaCl(g.e)}</td>
                       <td>{g.altura != null ? numeroCl(g.altura, 2) : "—"}</td>
+                      <td>{formatoSexagesimal(g.geo.lat, "lat")}</td>
+                      <td>{formatoSexagesimal(g.geo.lon, "lon")}</td>
+                      <td>{azimutCl(g.geo.convergenciaGon)}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-              {hitoValido && amarreValido && (
+              <p className="px-2 text-xs" style={{ color: "var(--pg-muted)" }}>
+                Geográficas en el mismo datum de la mensura (inversa de la proyección, sin cambio de datum), como exige el acta.
+              </p>
+              {hito && amarre && (
                 <>
                   <p className="px-2 text-xs font-semibold" style={{ color: "var(--pg-muted)" }}>
                     Relación del H.M. con el punto de amarre y ligazón del amarre a los linderos
                   </p>
                   <TablaRelacion
                     filas={[
-                      ...relacionDesdePunto({ ...hitoValido, nombre: hitoValido.nombre || "H.M." }, [{ ...amarreValido, nombre: amarreValido.nombre || "Amarre", tipo: "lindero" }]),
-                      ...relacionDesdePunto({ ...amarreValido, nombre: amarreValido.nombre || "Amarre" }, grilla.linderos),
+                      ...relacionDesdePunto({ ...hito, nombre: hito.nombre || "H.M." }, [{ ...amarre, nombre: amarre.nombre || "Amarre", tipo: "lindero" }]),
+                      ...relacionDesdePunto({ ...amarre, nombre: amarre.nombre || "Amarre" }, grilla.linderos),
                     ]}
                   />
                 </>
@@ -223,14 +280,23 @@ export function Tablas({ derivados: d, hito, amarre, auxiliares, superposiciones
             </p>
           </div>
         )}
-        {pestana === "azimut" &&
-          (hitoValido ? (
-            <TablaRelacion filas={relacionDesdePunto({ ...hitoValido }, grilla.linderos)} />
-          ) : (
-            <p className="p-4 text-xs" style={{ color: "var(--pg-muted)" }}>
-              Ingresa las coordenadas del hito de mensura para calcular azimut y distancia a cada lindero.
+        {pestana === "textos" && (
+          <div className="flex flex-col gap-2 p-2">
+            <Seccion titulo="Coordenadas UTM del punto de interés" texto={textoPuntoInteres(c.pi)} />
+            <Seccion titulo="Ubicación del H.M." texto={hito ? textoHito(hito, aGeograficas(hito, c.epsg)) : "Ingresa el hito de mensura."} />
+            <Seccion titulo="Relación del H.M. con el punto de amarre" texto={hito && amarre ? textoRelacionAmarre(hito, amarre) : "Ingresa el hito y el punto de amarre."} />
+            <Seccion titulo="Distribución de los vértices" texto={textoDistribucionVertices(grilla, c.pertenenciaEO, c.pertenenciaNS)} />
+            <Seccion
+              titulo="Individualización de las pertenencias"
+              texto={`${individualizacion.encabezado}\n${individualizacion.filas.map((f) => `${f.nombre}: ${f.vertices}`).join("\n")}`}
+            />
+            <Seccion titulo="Pertenencias vecinas" texto={sp.cargando ? "Consultando el catastro…" : vecinas.vecinas} />
+            <Seccion titulo="Abarcamiento" texto={sp.cargando ? "Consultando el catastro…" : vecinas.abarcamiento} />
+            <p className="px-1 text-xs" style={{ color: "var(--pg-muted)" }}>
+              Redacción automática con la estructura de las actas. Las vecinas y el abarcamiento salen del catastro en línea: confírmalos con los antecedentes registrales.
             </p>
-          ))}
+          </div>
+        )}
       </div>
     </div>
   )

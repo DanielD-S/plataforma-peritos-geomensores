@@ -130,7 +130,7 @@ export default function App() {
           </div>
           <SeparadorHorizontal alto={altoTablas} min={ALTO_MIN} max={altoMax()} onCambio={setAltoTablas} />
           <div className="min-h-0 overflow-hidden rounded-lg border" style={{ height: altoTablas, background: "var(--pg-panel)", borderColor: "var(--pg-line)" }}>
-            <Tablas derivados={derivados} hito={concesion.hito} amarre={concesion.amarre} auxiliares={concesion.auxiliares} superposiciones={superposiciones} />
+            <Tablas concesion={concesion} derivados={derivados} superposiciones={superposiciones} />
           </div>
         </section>
       </main>
