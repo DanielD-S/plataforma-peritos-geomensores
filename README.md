@@ -59,6 +59,10 @@ npm run test:run   # pruebas (Vitest)
 npm run build      # tsc -b + vite build
 ```
 
+Publicada en GitHub Pages: https://danield-s.github.io/plataforma-peritos-geomensores/
+El workflow `.github/workflows/pages.yml` corre pruebas, compila y despliega en cada push a `main`
+(requiere *Settings → Pages → Source: GitHub Actions*).
+
 ## Validación
 
 Las pruebas en `src/lib/geometria.test.ts` reproducen el acta de mensura real de
