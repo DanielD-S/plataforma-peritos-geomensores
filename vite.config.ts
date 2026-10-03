@@ -3,7 +3,11 @@ import react from "@vitejs/plugin-react"
 import tailwindcss from "@tailwindcss/vite"
 import { VitePWA } from "vite-plugin-pwa"
 
+// En GitHub Pages la app vive en /<repo>/; el workflow lo pasa en BASE_PATH. En local queda en "/".
+const base = process.env.BASE_PATH ?? "/"
+
 export default defineConfig({
+  base,
   plugins: [
     react(),
     tailwindcss(),
@@ -15,7 +19,8 @@ export default defineConfig({
         short_name: "Peritos",
         description: "Shapefiles Sernageomin, acta y plano de mensura para peritos mensuradores.",
         lang: "es-CL",
-        start_url: "/",
+        start_url: base,
+        scope: base,
         display: "standalone",
         background_color: "#f4f1ea",
         theme_color: "#0f766e",

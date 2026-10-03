@@ -41,6 +41,8 @@ Sernageomin. Ver `README.md` para el alcance y la hoja de ruta.
 - `src/lib/dxf.ts` — escritor DXF R12 propio. Validar cambios con `PPG_SALIDA=.salida npx vitest run src/lib/dxf.test.ts`
   y `python -c "from ezdxf import recover; d,a=recover.readfile('.salida/plano_antaquena.dxf'); print(len(a.errors))"`.
 - PWA con `vite-plugin-pwa` (`vite.config.ts`): la app entera se precachea; teselas CacheFirst, catastro NetworkFirst.
+- GitHub Pages (`.github/workflows/pages.yml`): compila con `BASE_PATH=/<repo>/`; en local `base` queda en `/`.
+  No uses rutas absolutas a `/` en el código: usa `import.meta.env.BASE_URL`.
 - `src/components/` — `Cartera`, `Formulario`, `Mapa` (Leaflet; incluye `CapaCatastro` y `EditorVertices`), `Tablas`, `Descargas`, `Revision`, `ImportarDialogo`, `Separador`.
 - Sin backend por ahora: todo el estado vive en el navegador.
 
